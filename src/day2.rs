@@ -61,9 +61,53 @@ fn part1(input: &String) -> u32 {
     values.into_iter().sum::<u32>()
 }
 
+fn part2(input: &String) -> u32 {
+    let mut powers: Vec<u32> = vec![];
+
+    for line in input.lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+
+        if parts.len() < 1 {
+            continue;
+        }
+
+        let sets: Vec<&str> = parts.get(1).unwrap().trim().split(';').collect();
+
+        let mut red: u32 = 0;
+        let mut green: u32 = 0;
+        let mut blue: u32 = 0;
+
+        for set in sets.into_iter() {
+            let grabs: Vec<&str> = set.trim().split(", ").collect();
+
+            for grab in grabs {
+                if let Some((amount, color)) = grab.split_once(' ') {
+                    let amt = amount.parse::<u32>().unwrap();
+
+                    if color == "red" && amt > red {
+                        red = amt;
+                    }
+
+                    if color == "green" && amt > green {
+                        green = amt;
+                    }
+
+                    if color == "blue" && amt > blue {
+                        blue = amt;
+                    }
+                }
+            }
+        }
+
+        powers.push(red * blue * green);
+    }
+
+    powers.into_iter().sum::<u32>()
+}
+
 pub fn answer() {
     let input = get_input();
 
     println!("Day 2 part 1: {}", part1(&input));
-    // println!("Day 2 part 2: {}", part2(&input));
+    println!("Day 2 part 2: {}", part2(&input));
 }
