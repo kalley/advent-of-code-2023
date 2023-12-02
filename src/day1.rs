@@ -95,7 +95,7 @@ fn part2(input: &String) -> u32 {
     values.iter().sum::<u32>()
 }
 
-pub fn day1() {
+pub fn answer() {
     let input = get_input();
 
     println!("Day 1 part 1: {}", part1(&input));
