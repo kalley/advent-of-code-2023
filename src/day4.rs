@@ -90,3 +90,28 @@ pub fn answer() {
     println!("Day 4 part 1: {}", part1(&input));
     println!("Day 4 part 2: {}", part2(&input));
 }
+
+#[cfg(test)]
+mod test {
+    use std::io;
+
+    use super::*;
+
+    #[test]
+    fn validate_part1() -> io::Result<()> {
+        let input = get_input();
+
+        assert_eq!(part1(&input), 15205);
+
+        Ok(())
+    }
+
+    #[test]
+    fn validate_part2() -> io::Result<()> {
+        let input = get_input();
+
+        assert_eq!(part2(&input), 6189740);
+
+        Ok(())
+    }
+}
