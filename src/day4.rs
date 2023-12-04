@@ -55,6 +55,33 @@ fn part1(input: &String) -> u32 {
 }
 
 fn part2(input: &String) -> u32 {
+    let mut scratchcards: HashMap<u32, u32> = HashMap::new();
+
+    for card in input.lines() {
+        let (card_number, matches) = if let Some(m) = get_matches(card) {
+            m
+        } else {
+            continue;
+        };
+
+        if !scratchcards.contains_key(&card_number) {
+            scratchcards.insert(card_number, 1);
+        }
+
+        let current_scratchcards = scratchcards.clone();
+        let times = current_scratchcards.get(&card_number).unwrap();
+        let mut counter = 1;
+
+        for _ in matches {
+            let number = card_number + counter;
+            let current_count = scratchcards.get(&number).unwrap_or(&1);
+
+            scratchcards.insert(number, current_count + times);
+            counter += 1;
+        }
+    }
+
+    scratchcards.values().into_iter().sum::<u32>()
 }
 
 pub fn answer() {
