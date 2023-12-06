@@ -1,47 +1,33 @@
-use std::{collections::HashMap, fs};
+use std::fs;
 
 fn get_input() -> String {
     fs::read_to_string("./data/day6.txt").expect("read the file")
 }
 
-fn map_time_to_distance(input: &String) -> HashMap<u64, u64> {
+fn map_times_and_distances<T>(input: &String, parse: fn(&str) -> T) -> (Option<T>, Option<T>) {
     let mut lines = input.lines();
 
     let times = if let Some((label, times)) = lines.next().unwrap().split_once(':') {
         if label != "Time" {
-            vec![]
+            None
         } else {
-            times
-                .trim()
-                .split(' ')
-                .filter(|v| *v != "")
-                .map(|time| time.trim().parse::<u64>().unwrap())
-                .collect()
+            Some(parse(times))
         }
     } else {
-        vec![]
+        None
     };
 
     let distances = if let Some((label, distances)) = lines.next().unwrap().split_once(':') {
         if label != "Distance" {
-            vec![]
+            None
         } else {
-            distances
-                .trim()
-                .split(' ')
-                .filter(|v| *v != "")
-                .map(|distance| distance.trim().parse::<u64>().unwrap())
-                .collect()
+            Some(parse(distances))
         }
     } else {
-        vec![]
+        None
     };
 
-    times
-        .iter()
-        .zip(distances.iter())
-        .map(|(t, d)| (*t, *d))
-        .collect()
+    (times, distances)
 }
 
 fn find_ways_to_win(time: u64, distance: u64) -> u64 {
@@ -60,9 +46,17 @@ fn find_ways_to_win(time: u64, distance: u64) -> u64 {
 
 fn part1(input: &String) -> u64 {
     let mut margin = vec![];
+    let (times, distances) = map_times_and_distances(input, |values| {
+        values
+            .trim()
+            .split(' ')
+            .filter(|v| *v != "")
+            .map(|v: &str| v.trim().parse::<u64>().unwrap())
+            .collect::<Vec<u64>>()
+    });
 
-    for (t, d) in map_time_to_distance(input) {
-        margin.push(find_ways_to_win(t, d));
+    for (t, d) in times.unwrap().iter().zip(distances.unwrap().iter()) {
+        margin.push(find_ways_to_win(*t, *d));
     }
 
     margin
@@ -71,29 +65,11 @@ fn part1(input: &String) -> u64 {
 }
 
 fn part2(input: &String) -> u64 {
-    let mut lines = input.lines();
+    let (time, distance) = map_times_and_distances(input, |value| {
+        value.replace(" ", "").parse::<u64>().unwrap()
+    });
 
-    let time = if let Some((label, time)) = lines.next().unwrap().split_once(':') {
-        if label != "Time" {
-            return 0;
-        }
-
-        time.replace(" ", "").parse::<u64>().unwrap()
-    } else {
-        return 0;
-    };
-
-    let distance = if let Some((label, distance)) = lines.next().unwrap().split_once(':') {
-        if label != "Distance" {
-            return 0;
-        }
-
-        distance.replace(" ", "").parse::<u64>().unwrap()
-    } else {
-        return 0;
-    };
-
-    find_ways_to_win(time, distance)
+    find_ways_to_win(time.unwrap(), distance.unwrap())
 }
 
 pub fn answer() {
