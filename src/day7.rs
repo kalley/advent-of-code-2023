@@ -254,12 +254,6 @@ mod test {
 
     use super::*;
 
-    static INPUT: &str = "32T3K 765
-T55J5 684
-KK677 28
-KTJJT 220
-QQQJA 483";
-
     #[test]
     fn validate_part1() -> io::Result<()> {
         let input = get_input();
