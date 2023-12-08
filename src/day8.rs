@@ -1,6 +1,6 @@
 use std::{
-    collections::HashMap,
     fs,
+    iter::Cycle,
     str::{Chars, Lines},
 };
 
@@ -10,36 +10,78 @@ fn get_input() -> String {
     fs::read_to_string(format!("./data/day{DAY}.txt")).expect("read the file")
 }
 
+type NodeHandle = usize;
+
 #[derive(Debug)]
 struct Node {
     id: String,
-    paths: (String, String),
+    left: NodeHandle,
+    right: NodeHandle,
 }
 
 impl Node {
-    fn lookup(&self, direction: char) -> String {
+    fn lookup(&self, direction: char) -> usize {
         match direction {
-            'R' => self.paths.1.to_owned(),
-            'L' => self.paths.0.to_owned(),
+            'R' => self.right,
+            'L' => self.left,
             _ => unreachable!(),
         }
     }
 }
 
-fn network_from_lines(mut lines: Lines) -> HashMap<String, Node> {
-    let mut map = HashMap::new();
+fn network_from_lines(mut lines: Lines) -> Vec<Node> {
+    let mut nodes: Vec<Node> = vec![];
 
     loop {
         if let Some(node) = lines.next() {
             if let Some((label, paths)) = node.split_once('=') {
                 if let Some((left, right)) = paths.trim().replace(['(', ')'], "").split_once(',') {
-                    map.insert(
-                        label.trim().to_string(),
-                        Node {
-                            id: label.trim().to_string(),
-                            paths: (left.trim().to_string(), right.trim().to_string()),
-                        },
-                    );
+                    let id = label.trim().to_string();
+                    let left = left.trim().to_string();
+                    let right = right.trim().to_string();
+
+                    let left_pos = if let Some(pos) = nodes.iter().position(|node| node.id == left)
+                    {
+                        pos
+                    } else {
+                        let node = Node {
+                            id: left,
+                            right: 0,
+                            left: 0,
+                        };
+
+                        nodes.push(node);
+
+                        nodes.len() - 1
+                    };
+
+                    let right_pos =
+                        if let Some(pos) = nodes.iter().position(|node| node.id == right) {
+                            pos
+                        } else {
+                            let node = Node {
+                                id: right,
+                                right: 0,
+                                left: 0,
+                            };
+
+                            nodes.push(node);
+
+                            nodes.len() - 1
+                        };
+
+                    if let Some(pos) = nodes.iter().position(|node| node.id == id) {
+                        nodes[pos].right = right_pos;
+                        nodes[pos].left = left_pos;
+                    } else {
+                        let node = Node {
+                            id,
+                            right: right_pos,
+                            left: left_pos,
+                        };
+
+                        nodes.push(node);
+                    }
                 }
             }
         } else {
@@ -47,41 +89,40 @@ fn network_from_lines(mut lines: Lines) -> HashMap<String, Node> {
         }
     }
 
-    map
+    nodes
 }
 
 #[derive(Debug)]
-struct HumanNetwork(HashMap<String, Node>);
+struct HumanNetwork(Vec<Node>);
 
 impl HumanNetwork {
     fn traverse(
         &self,
-        instructions: Chars,
+        instructions: Cycle<Chars>,
         start_node: Option<&Node>,
         intial_steps: Option<u64>,
     ) -> u64 {
-        let mut current = start_node.unwrap_or_else(|| self.0.get("AAA").unwrap());
+        let mut current =
+            start_node.unwrap_or_else(|| self.0.iter().find(|node| node.id == "AAA").unwrap());
         let mut steps = intial_steps.unwrap_or_default();
 
-        for c in instructions.clone() {
-            let next_path = current.lookup(c);
+        for c in instructions {
+            current = &self.0[current.lookup(c)];
 
             steps += 1;
 
-            if next_path == "ZZZ" {
+            if current.id == "ZZZ" {
                 return steps;
             }
-
-            current = self.0.get(&next_path).unwrap();
         }
 
-        self.traverse(instructions, Some(current), Some(steps))
+        0
     }
 }
 
 fn part1(input: &String) -> u64 {
     let mut lines = input.lines();
-    let instructions = lines.next().unwrap().chars();
+    let instructions = lines.next().unwrap().chars().cycle();
 
     let map = network_from_lines(lines);
 
@@ -90,74 +131,74 @@ fn part1(input: &String) -> u64 {
     network.traverse(instructions, None, None)
 }
 
+fn gcd(a: u64, b: u64) -> u64 {
+    if b == 0 {
+        return a;
+    }
+
+    gcd(b, a % b)
+}
+
+fn lcm(a: u64, b: u64) -> u64 {
+    (a / gcd(a, b)) * b
+}
+
 #[derive(Debug)]
-struct GhostNetwork(HashMap<String, Node>);
+struct GhostNetwork(Vec<Node>);
 
 impl GhostNetwork {
-    fn traverse(
-        &self,
-        instructions: Chars,
-        start_nodes: Option<Vec<&Node>>,
+    fn traverse<'a>(
+        &'a self,
+        instructions: Cycle<Chars>,
+        mut current: Vec<&'a Node>,
         mut steps: u64,
     ) -> u64 {
-        let mut current = start_nodes.unwrap_or_else(|| {
-            self.0
-                .iter()
-                .filter(|(k, _)| k.ends_with("A"))
-                .map(|(_, v)| v)
-                .collect()
-        });
+        let mut num_steps: Vec<u64> = vec![0; current.len()];
 
-        println!(
-            "steps: {}\ncurrent: {:?}\n",
-            steps,
-            current
-                .iter()
-                .map(|node| node.id.clone())
-                .collect::<Vec<String>>()
-        );
-
-        for c in instructions.clone() {
+        for c in instructions {
             let mut all_zs = true;
 
             current = current
                 .into_iter()
-                .map(|node| {
-                    let path = node.lookup(c);
+                .enumerate()
+                .map(|(i, node)| {
+                    let next = &self.0[node.lookup(c)];
 
-                    if !path.ends_with("Z") {
+                    if !next.id.ends_with("Z") {
                         all_zs = false;
+                    } else {
+                        num_steps[i] = steps + 1;
                     }
 
-                    self.0.get(&path).unwrap()
+                    next
                 })
                 .collect();
 
             steps += 1;
 
-            if all_zs {
-                return steps;
+            if !num_steps.iter().any(|steps| *steps == 0) {
+                break;
             }
         }
 
-        self.traverse(instructions, Some(current), steps)
+        num_steps
+            .into_iter()
+            .fold(0, |l, steps| if l == 0 { steps } else { lcm(steps, l) })
     }
 }
 
 fn part2(input: &String) -> u64 {
     let mut lines = input.lines();
-    let instructions = lines.next().unwrap().chars();
-
+    let instructions = lines.next().unwrap().chars().cycle();
     let nodes = network_from_lines(lines);
-
     let network = GhostNetwork(nodes);
-
-    let start_nodes = vec!["MQM", "CTV", "PDR", "SHL", "MML", "VPH"]
-        .into_iter()
-        .map(|id| network.0.get(id).unwrap())
+    let start_nodes = network
+        .0
+        .iter()
+        .filter(|node| node.id.ends_with("A"))
         .collect();
 
-    network.traverse(instructions, Some(start_nodes), 112147445)
+    network.traverse(instructions, start_nodes, 0)
 }
 
 pub fn answer() {
@@ -182,22 +223,11 @@ mod test {
         Ok(())
     }
 
-    static INPUT: &str = "LR
-
-11A = (11B, XXX)
-11B = (XXX, 11Z)
-11Z = (11B, XXX)
-22A = (22B, XXX)
-22B = (22C, 22C)
-22C = (22Z, 22Z)
-22Z = (22B, 22B)
-XXX = (XXX, XXX)";
-
     #[test]
     fn validate_part2() -> io::Result<()> {
-        let input1 = INPUT.to_string();
+        let input1 = get_input();
 
-        assert_eq!(part2(&input1), 6);
+        assert_eq!(part2(&input1), 8811050362409);
 
         Ok(())
     }
