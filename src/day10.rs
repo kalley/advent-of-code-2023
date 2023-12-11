@@ -24,8 +24,6 @@ struct Point {
 #[derive(Debug)]
 struct Maze {
     maze: Vec<Vec<char>>,
-    col_size: usize,
-    row_size: usize,
     start: (usize, usize),
 }
 
@@ -34,10 +32,8 @@ impl Maze {
         let mut maze = vec![];
         let mut row = 0;
         let mut start: (usize, usize) = (0, 0);
-        let mut col_size = 0;
 
         for line in text.lines() {
-            col_size = line.len();
             if let Some(col) = line.chars().position(|c| c == 'S') {
                 start = (row, col.try_into().unwrap());
             }
@@ -46,12 +42,7 @@ impl Maze {
             row += 1;
         }
 
-        Self {
-            maze,
-            col_size,
-            row_size: row,
-            start,
-        }
+        Self { maze, start }
     }
 
     fn next_step(&self, path: &Vec<Point>) -> Option<Point> {
