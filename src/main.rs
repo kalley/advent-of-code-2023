@@ -1,6 +1,7 @@
 use std::env;
 
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -24,7 +25,7 @@ fn main() {
         "7" => day7::answer(),
         "8" => day8::answer(),
         "9" => day9::answer(),
-        // "10" => day10::answer(),
+        "10" => day10::answer(),
         // "11" => day11::answer(),
         // "12" => day12::answer(),
         // "13" => day13::answer(),
