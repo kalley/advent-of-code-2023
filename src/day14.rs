@@ -155,6 +155,7 @@ fn part2(input: &String) -> usize {
         .unwrap()
         .0
 }
+
 pub fn answer() {
     let input = get_input();
 
