@@ -5,6 +5,7 @@ mod day10;
 mod day11;
 // mod day12;
 mod day13;
+mod day14;
 mod day2;
 mod day3;
 mod day4;
@@ -32,7 +33,7 @@ fn main() {
         "11" => day11::answer(),
         // "12" => day12::answer(),
         "13" => day13::answer(),
-        // "14" => day14::answer(),
+        "14" => day14::answer(),
         // "15" => day15::answer(),
         // "16" => day16::answer(),
         // "17" => day17::answer(),
