@@ -27,6 +27,39 @@ struct Beam {
     point: (usize, usize),
 }
 
+fn get_next_directions(tile: char, from: Direction) -> Vec<Direction> {
+    match from {
+        Direction::North => match tile {
+            '/' => vec![Direction::East],
+            '\\' => vec![Direction::West],
+            '.' | '|' => vec![Direction::North],
+            '-' => vec![Direction::East, Direction::West],
+            _ => unreachable!(),
+        },
+        Direction::East => match tile {
+            '/' => vec![Direction::North],
+            '\\' => vec![Direction::South],
+            '.' | '-' => vec![Direction::East],
+            '|' => vec![Direction::North, Direction::South],
+            _ => unreachable!(),
+        },
+        Direction::South => match tile {
+            '/' => vec![Direction::West],
+            '\\' => vec![Direction::East],
+            '.' | '|' => vec![Direction::South],
+            '-' => vec![Direction::West, Direction::East],
+            _ => unreachable!(),
+        },
+        Direction::West => match tile {
+            '/' => vec![Direction::South],
+            '\\' => vec![Direction::North],
+            '.' | '-' => vec![Direction::West],
+            '|' => vec![Direction::South, Direction::North],
+            _ => unreachable!(),
+        },
+    }
+}
+
 fn get_next_steps(
     beam: Beam,
     grid: &Vec<Vec<char>>,
@@ -45,63 +78,39 @@ fn get_next_steps(
     Some(match beam.direction {
         Direction::North => {
             if beam.point.0 > 0 {
-                let point = grid[beam.point.0 - 1][beam.point.1];
+                let tile = grid[beam.point.0 - 1][beam.point.1];
                 let next_point = (beam.point.0 - 1, beam.point.1);
 
-                match point {
-                    '/' => (next_point, vec![Direction::East]),
-                    '\\' => (next_point, vec![Direction::West]),
-                    '.' | '|' => (next_point, vec![Direction::North]),
-                    '-' => (next_point, vec![Direction::East, Direction::West]),
-                    _ => unreachable!(),
-                }
+                (next_point, get_next_directions(tile, Direction::North))
             } else {
                 return None;
             }
         }
         Direction::East => {
-            if let Some(point) = grid[beam.point.0].get(beam.point.1 + 1) {
+            if let Some(tile) = grid[beam.point.0].get(beam.point.1 + 1) {
                 let next_point = (beam.point.0, beam.point.1 + 1);
 
-                match point {
-                    '/' => (next_point, vec![Direction::North]),
-                    '\\' => (next_point, vec![Direction::South]),
-                    '.' | '-' => (next_point, vec![Direction::East]),
-                    '|' => (next_point, vec![Direction::North, Direction::South]),
-                    _ => unreachable!(),
-                }
+                (next_point, get_next_directions(*tile, Direction::East))
             } else {
                 return None;
             }
         }
         Direction::South => {
             if let Some(row) = grid.get(beam.point.0 + 1) {
-                let point = row[beam.point.1];
+                let tile = row[beam.point.1];
                 let next_point = (beam.point.0 + 1, beam.point.1);
 
-                match point {
-                    '/' => (next_point, vec![Direction::West]),
-                    '\\' => (next_point, vec![Direction::East]),
-                    '.' | '|' => (next_point, vec![Direction::South]),
-                    '-' => (next_point, vec![Direction::West, Direction::East]),
-                    _ => unreachable!(),
-                }
+                (next_point, get_next_directions(tile, Direction::South))
             } else {
                 return None;
             }
         }
         Direction::West => {
             if beam.point.1 > 0 {
-                let point = grid[beam.point.0][beam.point.1 - 1];
+                let tile = grid[beam.point.0][beam.point.1 - 1];
                 let next_point = (beam.point.0, beam.point.1 - 1);
 
-                match point {
-                    '/' => (next_point, vec![Direction::South]),
-                    '\\' => (next_point, vec![Direction::North]),
-                    '.' | '-' => (next_point, vec![Direction::West]),
-                    '|' => (next_point, vec![Direction::South, Direction::North]),
-                    _ => unreachable!(),
-                }
+                (next_point, get_next_directions(tile, Direction::West))
             } else {
                 return None;
             }
@@ -181,76 +190,44 @@ fn part2(input: &String) -> usize {
 
     // East/West
     for i in 0..row_count {
-        let mut energized = vec![vec!['.'; grid[0].len()]; grid.len()];
-        let mut visited = HashMap::new();
-        let next_point = (i, 0);
-        let directions = match grid[next_point.0][next_point.1] {
-            '/' => vec![Direction::North],
-            '\\' => vec![Direction::South],
-            '.' | '-' => vec![Direction::East],
-            '|' => vec![Direction::North, Direction::South],
-            _ => unreachable!(),
-        };
-        let result =
-            calculate_energized(next_point, directions, &grid, &mut energized, &mut visited);
+        [0, row_size - 1].iter().for_each(|col| {
+            let mut energized = vec![vec!['.'; grid[0].len()]; grid.len()];
+            let mut visited = HashMap::new();
+            let next_point = (i, *col);
+            let direction = if *col == 0 {
+                Direction::East
+            } else {
+                Direction::West
+            };
+            let directions = get_next_directions(grid[next_point.0][next_point.1], direction);
+            let result =
+                calculate_energized(next_point, directions, &grid, &mut energized, &mut visited);
 
-        if result > max_energized {
-            max_energized = result;
-        }
-
-        let mut energized = vec![vec!['.'; grid[0].len()]; grid.len()];
-        let mut visited = HashMap::new();
-        let next_point = (i, row_size - 1);
-        let directions = match grid[next_point.0][next_point.1] {
-            '/' => vec![Direction::South],
-            '\\' => vec![Direction::North],
-            '.' | '-' => vec![Direction::West],
-            '|' => vec![Direction::South, Direction::North],
-            _ => unreachable!(),
-        };
-        let result =
-            calculate_energized(next_point, directions, &grid, &mut energized, &mut visited);
-
-        if result > max_energized {
-            max_energized = result;
-        }
+            if result > max_energized {
+                max_energized = result;
+            }
+        })
     }
 
     // North/South
     for i in 0..row_size {
-        let mut energized = vec![vec!['.'; grid[0].len()]; grid.len()];
-        let mut visited = HashMap::new();
-        let next_point = (0, i);
-        let directions = match grid[next_point.0][next_point.1] {
-            '/' => vec![Direction::West],
-            '\\' => vec![Direction::East],
-            '.' | '|' => vec![Direction::South],
-            '-' => vec![Direction::West, Direction::East],
-            _ => unreachable!(),
-        };
-        let result =
-            calculate_energized(next_point, directions, &grid, &mut energized, &mut visited);
+        [0, row_count - 1].iter().for_each(|row| {
+            let mut energized = vec![vec!['.'; grid[0].len()]; grid.len()];
+            let mut visited = HashMap::new();
+            let next_point = (*row, i);
+            let direction: Direction = if *row == 0 {
+                Direction::South
+            } else {
+                Direction::North
+            };
+            let directions = get_next_directions(grid[next_point.0][next_point.1], direction);
+            let result =
+                calculate_energized(next_point, directions, &grid, &mut energized, &mut visited);
 
-        if result > max_energized {
-            max_energized = result;
-        }
-
-        let mut energized = vec![vec!['.'; grid[0].len()]; grid.len()];
-        let mut visited = HashMap::new();
-        let next_point = (row_count - 1, i);
-        let directions = match grid[next_point.0][next_point.1] {
-            '/' => vec![Direction::East],
-            '\\' => vec![Direction::West],
-            '.' | '|' => vec![Direction::North],
-            '-' => vec![Direction::East, Direction::West],
-            _ => unreachable!(),
-        };
-        let result =
-            calculate_energized(next_point, directions, &grid, &mut energized, &mut visited);
-
-        if result > max_energized {
-            max_energized = result;
-        }
+            if result > max_energized {
+                max_energized = result;
+            }
+        })
     }
 
     max_energized
